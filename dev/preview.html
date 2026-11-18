@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Airco Commander testlab</title>
+  <style>
+    :root { --bg: #e9e4db; --panel: #fff; --text: #1b2230; --muted: #7b8291; --line: rgba(0,0,0,.08); }
+    body.dark { --bg: #0d0f13; --panel: #1a1e25; --text: #eef1f6; --muted: #8d96a6; --line: rgba(255,255,255,.08); }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; transition: background .3s; }
+    .wrap { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh; }
+    aside { background: var(--panel); border-right: 1px solid var(--line); padding: 18px; overflow: auto; max-height: 100vh; position: sticky; top: 0; }
+    h1 { font-size: 16px; margin: 0 0 4px; }
+    .sub { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+    h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 8px; }
+    .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+    .btns button { border: 1px solid var(--line); background: transparent; color: inherit; border-radius: 10px; padding: 6px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+    .btns button.on { background: #1b2230; color: #fff; border-color: #1b2230; }
+    body.dark .btns button.on { background: #eef1f6; color: #1b2230; }
+    label.range { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: 12px; margin-bottom: 8px; }
+    label.range input { grid-column: 1 / -1; width: 100%; }
+    #log { font: 11px ui-monospace, Menlo, monospace; color: var(--muted); white-space: pre-wrap; max-height: 240px; overflow: auto; border-top: 1px solid var(--line); padding-top: 8px; }
+    main { padding: 32px 24px; display: flex; justify-content: center; align-items: flex-start; gap: 28px; flex-wrap: wrap; }
+    #editor { width: 380px; max-width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+    #editor h3 { margin: 0 0 2px; font-size: 15px; }
+    #editor .note { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+    .f { margin-bottom: 12px; }
+    .f > label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+    .f input[type=text], .f input[type=number], .f select { width: 100%; height: 40px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: inherit; padding: 0 10px; font: inherit; }
+    .f select option { color: #1b2230; }
+    .f .help { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .f .checks label { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; }
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    details { border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; margin-bottom: 10px; }
+    details[open] { padding-bottom: 4px; }
+    summary { cursor: pointer; padding: 12px 0; font-weight: 600; font-size: 13px; }
+    #yaml { font: 11px ui-monospace, Menlo, monospace; white-space: pre-wrap; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; }
+    #stage { width: 480px; max-width: 100%; transition: width .3s; }
+    @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } aside { position: static; max-height: none; border-right: 0; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside>
+      <h1>Airco Commander testlab</h1>
+      <div class="sub">Neppe airco, echte kaart. Alles wat je aanklikt wordt hieronder gelogd.</div>
+
+      <h2>Thema</h2>
+      <div class="btns" data-group="theme">
+        <button data-v="light" class="on">Licht</button><button data-v="dark">Donker</button>
+      </div>
+
+      <h2>Breedte</h2>
+      <div class="btns" data-group="width">
+        <button data-v="360">Telefoon</button><button data-v="480" class="on">Kaart</button><button data-v="960">Tablet</button>
+      </div>
+
+      <h2>Scenario</h2>
+      <div class="btns" data-group="scenario">
+        <button data-v="heat" class="on">Verwarmt</button>
+        <button data-v="cool">Koelt</button>
+        <button data-v="auto">Auto</button>
+        <button data-v="dry">Drogen</button>
+        <button data-v="fan_only">Ventileren</button>
+        <button data-v="idle">Op temperatuur</button>
+        <button data-v="defrost">Ontdooit</button>
+        <button data-v="off">Uit</button>
+        <button data-v="unavailable">Onbereikbaar</button>
+      </div>
+
+      <h2>Extra's</h2>
+      <div class="btns" data-group="extras" data-multi>
+        <button data-v="timers" class="on">Timer-integratie</button>
+        <button data-v="vacant" class="on">Afwezigheidsmodus</button>
+        <button data-v="outdoor" class="on">Buitensensor</button>
+        <button data-v="favs" class="on">Favorieten</button>
+        <button data-v="step01">Airco-stap 0,1°</button>
+      </div>
+
+      <h2>Temperaturen</h2>
+      <label class="range">Binnen <b id="inV"></b><input id="inside" type="range" min="10" max="32" step="0.1" value="19.5"></label>
+      <label class="range">Buiten <b id="outV"></b><input id="outside" type="range" min="-10" max="38" step="0.5" value="9"></label>
+
+      <h2>Log</h2>
+      <div id="log"></div>
+    </aside>
+    <main><div id="stage"></div>
+      <section id="editor"><h3>Kaart-editor</h3><div class="note">Schets van de editor in Home Assistant: dezelfde velden, maar HA tekent ze straks in zijn eigen stijl. Wijzigingen werken live op de kaart.</div><div id="form"></div><div id="yaml"></div></section>
+    </main>
+  </div>
+
+  <script>
+    window.AIRCO_COMMANDER_FONT_BASE = "../custom_components/airco_commander/www/fonts/";
+    customElements.define("ha-card", class extends HTMLElement {});
+    customElements.define("home-assistant", class extends HTMLElement {});
+
+    const $ = (s) => document.querySelector(s);
+    const log = (m) => { const el = $("#log"); el.textContent = `${new Date().toLocaleTimeString()}  ${m}\n` + el.textContent; };
+    const C = "climate.airco_slaapkamer";
+    const OUT = "sensor.airco_slaapkamer_buitentemperatuur";
+    const HL = "select.airco_slaapkamer_afwezigheidsmodus";
+    const SLEEP = "sensor.airco_slaapkamer_slaaptimer";
+    const NEXT = "sensor.airco_slaapkamer_volgende_uitschakeling";
+    const EN = "sensor.airco_slaapkamer_energieverbruik_totaal";
+    const iso = (ms) => new Date(Date.now() + ms).toISOString();
+    const opts = { theme: "light", width: 480, extras: new Set(["timers", "vacant", "outdoor", "favs"]) };
+
+    let states = {
+      [C]: { entity_id: C, state: "heat", attributes: {
+        friendly_name: "Airco Slaapkamer", hvac_modes: ["off", "auto", "cool", "heat", "dry", "fan_only"],
+        fan_modes: ["auto", "quiet", "low", "medium", "high"],
+        swing_modes: ["up_down_auto", "highest", "middle", "normal", "lowest", "3d_auto"],
+        swing_horizontal_modes: ["left_right_auto", "left_left", "left_center", "center_center", "center_right", "right_right", "left_right", "right_left", "3d_auto"],
+        fan_mode: "low", swing_mode: "middle", swing_horizontal_mode: "left_center",
+        min_temp: 16, max_temp: 30, target_temp_step: 0.5, temperature: 21, current_temperature: 19.5, hvac_action: "heating" } },
+      "climate.airco_woonkamer": { entity_id: "climate.airco_woonkamer", state: "cool", attributes: {
+        friendly_name: "Airco Woonkamer", hvac_modes: ["off", "auto", "cool", "heat", "dry", "fan_only"],
+        fan_modes: ["auto", "quiet", "low", "medium", "high"],
+        swing_modes: ["up_down_auto", "highest", "middle", "normal", "lowest", "3d_auto"],
+        swing_horizontal_modes: ["left_right_auto", "left_left", "left_center", "center_center", "center_right", "right_right", "left_right", "right_left", "3d_auto"],
+        fan_mode: "auto", swing_mode: "3d_auto", swing_horizontal_mode: "3d_auto",
+        min_temp: 16, max_temp: 30, target_temp_step: 0.5, temperature: 22, current_temperature: 24.5, hvac_action: "cooling" } },
+      "climate.airco_zolder": { entity_id: "climate.airco_zolder", state: "off", attributes: {
+        friendly_name: "Airco Zolder", hvac_modes: ["off", "auto", "cool", "heat", "dry", "fan_only"],
+        fan_modes: ["auto", "quiet", "low", "medium", "high"], swing_modes: ["up_down_auto", "highest", "middle", "normal", "lowest"],
+        fan_mode: "low", swing_mode: "normal", min_temp: 16, max_temp: 30, target_temp_step: 0.5, temperature: 20, current_temperature: 17, hvac_action: "off" } },
+      [OUT]: { entity_id: OUT, state: "9.0", attributes: { device_class: "temperature" } },
+      [HL]: { entity_id: HL, state: "off", attributes: { options: ["off", "away_cool", "away_heat"] } },
+      [EN]: { entity_id: EN, state: "11.75", attributes: { device_class: "energy", unit_of_measurement: "kWh" } },
+      [SLEEP]: { entity_id: SLEEP, state: iso(83 * 60000 + 12000), attributes: { airco_commander_climate: C, airco_commander_role: "sleep_timer", duration_minutes: 90 } },
+      [NEXT]: { entity_id: NEXT, state: "unknown", attributes: { airco_commander_climate: C, airco_commander_role: "next_off", off_time: "23:00", enabled: false } },
+    };
+    const allEntities = {
+      [C]: { entity_id: C, device_id: "dev1", platform: "mitsubishi_wf_rac" },
+      [OUT]: { entity_id: OUT, device_id: "dev1", platform: "mitsubishi_wf_rac", translation_key: "outdoor" },
+      [HL]: { entity_id: HL, device_id: "dev1", platform: "mitsubishi_wf_rac", translation_key: "home_leave_mode" },
+    };
+
+    function patch(id, fn) {
+      const next = { ...states[id], attributes: { ...states[id].attributes } };
+      fn(next);
+      states = { ...states, [id]: next };
+    }
+    const actionFor = (mode, cur, target) => mode === "off" ? "off" : mode === "heat" ? (cur < target ? "heating" : "idle")
+      : mode === "cool" ? (cur > target ? "cooling" : "idle") : mode === "dry" ? "drying" : mode === "fan_only" ? "fan"
+      : cur < target ? "heating" : "cooling";
+    function nextOccurrence(hhmm) {
+      const [h, m] = hhmm.split(":").map(Number);
+      const d = new Date(); d.setHours(h, m, 0, 0);
+      if (d <= new Date()) d.setDate(d.getDate() + 1);
+      return d.toISOString();
+    }
+
+    async function callService(domain, service, data) {
+      log(`${domain}.${service} ${JSON.stringify(data)}`);
+      await new Promise((r) => setTimeout(r, 350));
+      const id = data.entity_id;
+      if (domain === "climate") patch(id, (s) => {
+        if (service === "turn_off") s.state = "off";
+        if (service === "turn_on") s.state = s.attributes._last || "heat";
+        if (service === "set_hvac_mode") s.state = data.hvac_mode;
+        if (service === "set_temperature") { s.attributes.temperature = data.temperature; if (data.hvac_mode) s.state = data.hvac_mode; }
+        if (service === "set_fan_mode") s.attributes.fan_mode = data.fan_mode;
+        if (service === "set_swing_mode") s.attributes.swing_mode = data.swing_mode;
+        if (service === "set_swing_horizontal_mode") s.attributes.swing_horizontal_mode = data.swing_horizontal_mode;
+        if (s.state !== "off") s.attributes._last = s.state;
+        s.attributes.hvac_action = actionFor(s.state, s.attributes.current_temperature, s.attributes.temperature);
+      });
+      if (domain === "select") patch(id, (s) => (s.state = data.option));
+      if (domain === "airco_commander") {
+        if (service === "start_sleep_timer") patch(SLEEP, (s) => { s.state = iso(data.duration * 60000); s.attributes.duration_minutes = data.duration; });
+        if (service === "cancel_sleep_timer") patch(SLEEP, (s) => { s.state = "unknown"; s.attributes.duration_minutes = null; });
+        if (service === "set_off_timer") patch(NEXT, (s) => {
+          if (data.time) s.attributes.off_time = data.time;
+          if (data.enabled !== undefined) s.attributes.enabled = data.enabled;
+          s.state = s.attributes.enabled ? nextOccurrence(s.attributes.off_time) : "unknown";
+        });
+      }
+      push();
+    }
+
+    let card;
+    function visibleStates() {
+      const out = { ...states };
+      if (!opts.extras.has("timers")) { delete out[SLEEP]; delete out[NEXT]; }
+      if (!opts.extras.has("vacant")) delete out[HL];
+      if (!opts.extras.has("outdoor")) delete out[OUT];
+      if (opts.extras.has("step01")) out[C] = { ...out[C], attributes: { ...out[C].attributes, target_temp_step: 0.1 } };
+      // What the integration would put on its own sensors: the chosen links.
+      for (const id of [SLEEP, NEXT]) {
+        if (!out[id]) continue;
+        out[id] = { ...out[id], attributes: { ...out[id].attributes,
+          airco_commander_outdoor_sensor: opts.extras.has("outdoor") ? OUT : null,
+          airco_commander_home_leave_select: opts.extras.has("vacant") ? HL : null,
+          airco_commander_energy_sensor: EN } };
+      }
+      return out;
+    }
+    function visibleEntities() {
+      const out = { ...allEntities };
+      if (!opts.extras.has("vacant")) delete out[HL];
+      if (!opts.extras.has("outdoor")) delete out[OUT];
+      return out;
+    }
+    function push() {
+      if (!card) return;
+      card.hass = { states: visibleStates(), entities: visibleEntities(), language: "nl", locale: { language: "nl" }, themes: { darkMode: opts.theme === "dark" }, callService };
+    }
+    let cfg = { type: "custom:airco-commander-card", entity: C, name: "Slaapkamer", theme: "auto", layout: "auto", mode_style: "bar",
+      favorite_1: { name: "Nacht", hvac_mode: "heat", temperature: 19, fan_mode: "quiet", swing_mode: "lowest" },
+      favorite_2: { name: "Zomer", hvac_mode: "cool", temperature: 23, fan_mode: "auto", swing_mode: "3d_auto", swing_horizontal_mode: "3d_auto" } };
+    function effectiveCfg() {
+      const c = JSON.parse(JSON.stringify(cfg));
+      if (!opts.extras.has("favs")) { delete c.favorite_1; delete c.favorite_2; }
+      return c;
+    }
+    function buildCard() {
+      $("#stage").innerHTML = "";
+      card = document.createElement("airco-commander-card");
+      card.setConfig(effectiveCfg());
+      $("#stage").appendChild(card);
+      push();
+      renderEditor();
+    }
+    function applyCfg() {
+      card.setConfig(effectiveCfg());
+      push();
+      $("#yaml").textContent = toYaml(cfg);
+    }
+    function toYaml(o, ind = "") {
+      return Object.entries(o).map(([k, v]) => {
+        if (v && typeof v === "object" && !Array.isArray(v)) return Object.keys(v).length ? `${ind}${k}:\n${toYaml(v, ind + "  ")}` : "";
+        if (Array.isArray(v)) return `${ind}${k}:\n${v.map((x) => `${ind}  - ${x}`).join("\n")}`;
+        return `${ind}${k}: ${v}`;
+      }).filter(Boolean).join("\n");
+    }
+    function renderEditor() {
+      const form = customElements.get("airco-commander-card").getConfigForm();
+      const root = $("#form");
+      root.innerHTML = "";
+      renderSchema(form.schema, cfg, root, form);
+      $("#yaml").textContent = toYaml(cfg);
+    }
+    function setVal(obj, name, value) {
+      if (value === "" || value === undefined || value === null || (Array.isArray(value) && !value.length)) delete obj[name];
+      else obj[name] = value;
+      applyCfg();
+    }
+    function renderSchema(schema, data, parent, form) {
+      for (const s of schema) {
+        if (s.type === "grid") {
+          const g = document.createElement("div"); g.className = "g2";
+          renderSchema(s.schema, data, g, form); parent.appendChild(g); continue;
+        }
+        if (s.type === "expandable") {
+          const d = document.createElement("details");
+          d.innerHTML = `<summary>${s.title}</summary>`;
+          let sub = data;
+          if (!s.flatten && s.name) { data[s.name] = data[s.name] || {}; sub = data[s.name]; }
+          renderSchema(s.schema, sub, d, form); parent.appendChild(d); continue;
+        }
+        const f = document.createElement("div"); f.className = "f";
+        const lbl = (form.computeLabel && form.computeLabel(s)) || s.name;
+        const help = form.computeHelper && form.computeHelper(s);
+        f.innerHTML = `<label>${lbl}${s.required ? " *" : ""}</label>`;
+        const sel = s.selector || {};
+        const cur = data[s.name];
+        let input;
+        if (sel.entity && sel.entity.multiple) {
+          input = document.createElement("div"); input.className = "checks";
+          const chosen = new Set(cur || []);
+          for (const id of Object.keys(states).filter((x) => x.startsWith(sel.entity.domain + ".") && x !== data.entity)) {
+            const row = document.createElement("label");
+            row.innerHTML = `<input type="checkbox" ${chosen.has(id) ? "checked" : ""}> ${id}`;
+            row.querySelector("input").onchange = (e) => { e.target.checked ? chosen.add(id) : chosen.delete(id); setVal(data, s.name, [...chosen]); };
+            input.appendChild(row);
+          }
+        } else if (sel.entity) {
+          input = document.createElement("select");
+          const ids = Object.keys(states).filter((id) => id.startsWith(sel.entity.domain + "."));
+          input.innerHTML = `<option value=""></option>` + ids.map((id) => `<option ${id === cur ? "selected" : ""}>${id}</option>`).join("");
+          input.onchange = () => setVal(data, s.name, input.value);
+        } else if (sel.select && sel.select.multiple) {
+          input = document.createElement("div"); input.className = "checks";
+          const chosen = new Set(cur || []);
+          for (const o of sel.select.options) {
+            const v = o.value ?? o, l = o.label ?? o;
+            const row = document.createElement("label");
+            row.innerHTML = `<input type="checkbox" ${chosen.has(v) ? "checked" : ""}> ${l}`;
+            row.querySelector("input").onchange = (e) => { e.target.checked ? chosen.add(v) : chosen.delete(v); setVal(data, s.name, [...chosen]); };
+            input.appendChild(row);
+          }
+        } else if (sel.select) {
+          input = document.createElement("select");
+          input.innerHTML = `<option value=""></option>` + sel.select.options.map((o) => { const v = o.value ?? o, l = o.label ?? o; return `<option value="${v}" ${v === cur ? "selected" : ""}>${l}</option>`; }).join("");
+          input.onchange = () => setVal(data, s.name, input.value);
+        } else if (sel.number) {
+          input = document.createElement("input"); input.type = "number";
+          Object.assign(input, { min: sel.number.min, max: sel.number.max, step: sel.number.step, value: cur ?? "" });
+          input.onchange = () => setVal(data, s.name, input.value === "" ? "" : Number(input.value));
+        } else {
+          input = document.createElement("input"); input.type = "text"; input.value = cur ?? "";
+          input.onchange = () => setVal(data, s.name, input.value);
+        }
+        f.appendChild(input);
+        if (help) f.insertAdjacentHTML("beforeend", `<div class="help">${help}</div>`);
+        parent.appendChild(f);
+      }
+    }
+
+    function scenario(v) {
+      patch(C, (s) => {
+        const a = s.attributes;
+        if (v === "unavailable") { s.state = "unavailable"; return; }
+        if (v === "idle") { s.state = "heat"; a.temperature = Math.round(a.current_temperature * 2) / 2; a.hvac_action = "idle"; return; }
+        if (v === "defrost") { s.state = "heat"; a.hvac_action = "defrosting"; return; }
+        s.state = v;
+        if (v === "cool" && a.temperature >= a.current_temperature) a.temperature = Math.max(16, Math.round(a.current_temperature) - 2);
+        if (v === "heat" && a.temperature <= a.current_temperature) a.temperature = Math.min(30, Math.round(a.current_temperature) + 2);
+        a.hvac_action = actionFor(v, a.current_temperature, a.temperature);
+        if (v !== "off") a._last = v;
+      });
+      push();
+    }
+
+    document.querySelectorAll(".btns").forEach((group) => {
+      group.addEventListener("click", (ev) => {
+        const b = ev.target.closest("button");
+        if (!b) return;
+        const name = group.dataset.group;
+        if (group.hasAttribute("data-multi")) {
+          b.classList.toggle("on");
+          opts.extras[b.classList.contains("on") ? "add" : "delete"](b.dataset.v);
+          buildCard();
+          return;
+        }
+        group.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
+        if (name === "theme") { opts.theme = b.dataset.v; document.body.classList.toggle("dark", opts.theme === "dark"); push(); }
+        if (name === "width") { $("#stage").style.width = b.dataset.v + "px"; }
+        if (name === "scenario") scenario(b.dataset.v);
+      });
+    });
+    const syncRanges = () => { $("#inV").textContent = $("#inside").value + "°"; $("#outV").textContent = $("#outside").value + "°"; };
+    $("#inside").addEventListener("input", (e) => { patch(C, (s) => { s.attributes.current_temperature = Number(e.target.value); s.attributes.hvac_action = actionFor(s.state, s.attributes.current_temperature, s.attributes.temperature); }); syncRanges(); push(); });
+    $("#outside").addEventListener("input", (e) => { patch(OUT, (s) => (s.state = e.target.value)); syncRanges(); push(); });
+    syncRanges();
+
+    window.addEventListener("hass-notification", (e) => log("MELDING: " + e.detail.message));
+
+    import("../custom_components/airco_commander/www/airco-commander-card.js?v=" + Date.now())
+      .then(() => { buildCard(); log("Kaart geladen"); })
+      .catch((e) => log("LADEN MISLUKT: " + e.stack));
+  </script>
+</body>
+</html>

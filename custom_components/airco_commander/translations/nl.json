@@ -1,0 +1,126 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Airco toevoegen",
+        "description": "Kies de climate-entity van de airco. Dit is de airco die de kaart bedient en die de timers uitzetten.",
+        "data": {
+          "climate_entity": "Airco"
+        }
+      },
+      "links": {
+        "title": "Gekoppelde entities van {airco}",
+        "description": "Timers en kaart werken op **{climate}**.\n\nVan de {total} koppelingen zijn er {found} automatisch gevonden op het apparaat van de airco zelf en hieronder ingevuld. Controleer ze, pas ze aan, of maak een veld leeg om dat onderdeel weg te laten.",
+        "data": {
+          "outdoor_sensor": "Buitentemperatuur",
+          "home_leave_select": "Leegstaand pand (vorstbeveiliging)",
+          "energy_sensor": "Energieverbruik",
+          "cancel_sleep_on_off": "Slaaptimer stoppen als de airco uitgezet wordt",
+          "catch_up_minutes": "Gemiste timer nog uitvoeren tot"
+        },
+        "data_description": {
+          "outdoor_sensor": "Staat bovenaan de kaart.",
+          "home_leave_select": "De afwezigheidsmodus van de airco zelf (off / away_heat / away_cool). Stuurt de tegel Leegstaand op de kaart; leeg laten als de airco die niet heeft.",
+          "energy_sensor": "Oplopend kWh-totaal, als chip op de kaart.",
+          "cancel_sleep_on_off": "Wordt de airco op een andere manier uitgezet (afstandsbediening, app, kaart), dan stopt een lopende slaaptimer ook.",
+          "catch_up_minutes": "Liep een timer af terwijl Home Assistant niet draaide, dan wordt hij na het opstarten alsnog uitgevoerd als hij niet ouder is dan dit. 0 zet inhalen uit."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Deze airco is al toegevoegd."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Gekoppelde entities van {airco}",
+        "description": "Timers en kaart werken op **{climate}**.\n\nVan de {total} koppelingen zijn er {found} automatisch gevonden op het apparaat van de airco zelf en hieronder ingevuld. Controleer ze, pas ze aan, of maak een veld leeg om dat onderdeel weg te laten.",
+        "data": {
+          "outdoor_sensor": "Buitentemperatuur",
+          "home_leave_select": "Leegstaand pand (vorstbeveiliging)",
+          "energy_sensor": "Energieverbruik",
+          "cancel_sleep_on_off": "Slaaptimer stoppen als de airco uitgezet wordt",
+          "catch_up_minutes": "Gemiste timer nog uitvoeren tot"
+        },
+        "data_description": {
+          "outdoor_sensor": "Staat bovenaan de kaart.",
+          "home_leave_select": "De afwezigheidsmodus van de airco zelf (off / away_heat / away_cool). Stuurt de tegel Leegstaand op de kaart; leeg laten als de airco die niet heeft.",
+          "energy_sensor": "Oplopend kWh-totaal, als chip op de kaart.",
+          "cancel_sleep_on_off": "Wordt de airco op een andere manier uitgezet (afstandsbediening, app, kaart), dan stopt een lopende slaaptimer ook.",
+          "catch_up_minutes": "Liep een timer af terwijl Home Assistant niet draaide, dan wordt hij na het opstarten alsnog uitgevoerd als hij niet ouder is dan dit. 0 zet inhalen uit."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "sleep_timer": {
+        "name": "Slaaptimer"
+      },
+      "next_off": {
+        "name": "Volgende uitschakeling"
+      }
+    },
+    "switch": {
+      "off_time_enabled": {
+        "name": "Vaste uitschakeltijd"
+      }
+    },
+    "time": {
+      "off_time": {
+        "name": "Uitschakeltijd"
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_airco": {
+      "message": "{entity_id} is niet toegevoegd aan Airco Commander."
+    }
+  },
+  "services": {
+    "start_sleep_timer": {
+      "name": "Slaaptimer starten",
+      "description": "Zet de airco uit na de opgegeven tijd.",
+      "fields": {
+        "entity_id": {
+          "name": "Airco",
+          "description": "Climate-entity die aan Airco Commander is toegevoegd."
+        },
+        "duration": {
+          "name": "Duur",
+          "description": "Minuten, of een duur zoals 1:30."
+        }
+      }
+    },
+    "cancel_sleep_timer": {
+      "name": "Slaaptimer stoppen",
+      "description": "Stopt een lopende slaaptimer.",
+      "fields": {
+        "entity_id": {
+          "name": "Airco",
+          "description": "Climate-entity die aan Airco Commander is toegevoegd."
+        }
+      }
+    },
+    "set_off_timer": {
+      "name": "Vaste uitschakeltijd instellen",
+      "description": "Stelt de dagelijkse uitschakeltijd in en/of zet hem aan of uit.",
+      "fields": {
+        "entity_id": {
+          "name": "Airco",
+          "description": "Climate-entity die aan Airco Commander is toegevoegd."
+        },
+        "time": {
+          "name": "Tijd",
+          "description": "Tijdstip waarop de airco uit gaat."
+        },
+        "enabled": {
+          "name": "Actief",
+          "description": "Of de vaste uitschakeltijd aan staat."
+        }
+      }
+    }
+  }
+}

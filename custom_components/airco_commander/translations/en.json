@@ -1,0 +1,126 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Add an airco",
+        "description": "Pick the climate entity of the airco. This is the airco the card controls and the timers turn off.",
+        "data": {
+          "climate_entity": "Airco"
+        }
+      },
+      "links": {
+        "title": "Linked entities of {airco}",
+        "description": "Timers and card act on **{climate}**.\n\n{found} of {total} linked entities were found on the airco's own device and filled in below. Check them, change them, or clear a field to leave that part out.",
+        "data": {
+          "outdoor_sensor": "Outdoor temperature",
+          "home_leave_select": "Vacant property (frost protection)",
+          "energy_sensor": "Energy usage",
+          "cancel_sleep_on_off": "Cancel the sleep timer when the airco is turned off",
+          "catch_up_minutes": "Catch up on a missed timer for up to"
+        },
+        "data_description": {
+          "outdoor_sensor": "Shown at the top of the card.",
+          "home_leave_select": "The airco's own Home Leave select (off / away_heat / away_cool). Drives the Vacant tile on the card; leave empty if the airco has none.",
+          "energy_sensor": "Running kWh total, shown as a chip on the card.",
+          "cancel_sleep_on_off": "Turning the airco off by any means (remote, app, card) also stops a running sleep timer.",
+          "catch_up_minutes": "When a timer came due while Home Assistant was not running, it is still carried out after startup if it is not older than this. 0 turns catching up off."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This airco has already been added."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Linked entities of {airco}",
+        "description": "Timers and card act on **{climate}**.\n\n{found} of {total} linked entities were found on the airco's own device and filled in below. Check them, change them, or clear a field to leave that part out.",
+        "data": {
+          "outdoor_sensor": "Outdoor temperature",
+          "home_leave_select": "Vacant property (frost protection)",
+          "energy_sensor": "Energy usage",
+          "cancel_sleep_on_off": "Cancel the sleep timer when the airco is turned off",
+          "catch_up_minutes": "Catch up on a missed timer for up to"
+        },
+        "data_description": {
+          "outdoor_sensor": "Shown at the top of the card.",
+          "home_leave_select": "The airco's own Home Leave select (off / away_heat / away_cool). Drives the Vacant tile on the card; leave empty if the airco has none.",
+          "energy_sensor": "Running kWh total, shown as a chip on the card.",
+          "cancel_sleep_on_off": "Turning the airco off by any means (remote, app, card) also stops a running sleep timer.",
+          "catch_up_minutes": "When a timer came due while Home Assistant was not running, it is still carried out after startup if it is not older than this. 0 turns catching up off."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "sleep_timer": {
+        "name": "Sleep timer"
+      },
+      "next_off": {
+        "name": "Next turn-off"
+      }
+    },
+    "switch": {
+      "off_time_enabled": {
+        "name": "Daily turn-off"
+      }
+    },
+    "time": {
+      "off_time": {
+        "name": "Turn-off time"
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_airco": {
+      "message": "{entity_id} has not been added to Airco Commander."
+    }
+  },
+  "services": {
+    "start_sleep_timer": {
+      "name": "Start sleep timer",
+      "description": "Turns the airco off after the given time.",
+      "fields": {
+        "entity_id": {
+          "name": "Airco",
+          "description": "Climate entity added to Airco Commander."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Minutes, or a duration such as 1:30."
+        }
+      }
+    },
+    "cancel_sleep_timer": {
+      "name": "Cancel sleep timer",
+      "description": "Stops a running sleep timer.",
+      "fields": {
+        "entity_id": {
+          "name": "Airco",
+          "description": "Climate entity added to Airco Commander."
+        }
+      }
+    },
+    "set_off_timer": {
+      "name": "Set daily turn-off",
+      "description": "Sets the daily turn-off time and/or turns it on or off.",
+      "fields": {
+        "entity_id": {
+          "name": "Airco",
+          "description": "Climate entity added to Airco Commander."
+        },
+        "time": {
+          "name": "Time",
+          "description": "Time of day to turn the airco off."
+        },
+        "enabled": {
+          "name": "Enabled",
+          "description": "Whether the daily turn-off is active."
+        }
+      }
+    }
+  }
+}
