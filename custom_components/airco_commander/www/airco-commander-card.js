@@ -10,7 +10,7 @@
  * integration itself - no request leaves the house.
  */
 (() => {
-  const CARD_VERSION = "0.0.1-beta.1";
+  const CARD_VERSION = "0.0.1-beta.2";
   const CARD_TAG = "airco-commander-card";
   const DOMAIN = "airco_commander";
   const DEFINE_FALLBACK_DELAY_MS = 5000;
