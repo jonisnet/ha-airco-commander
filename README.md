@@ -1,3 +1,5 @@
+<p align="center"><img src="custom_components/airco_commander/brand/icon.png" width="96" height="96" alt="Airco Commander logo: an airco unit over a cold and warm split, with a snowflake and a flame"></p>
+
 # Airco Commander
 
 [![Version](https://img.shields.io/github/v/release/jonisnet/ha-airco-commander?include_prereleases&style=flat-square&label=version)](https://github.com/jonisnet/ha-airco-commander/releases)
