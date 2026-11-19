@@ -24,6 +24,11 @@ the [Mitsubishi WF-RAC integration](https://github.com/blues-sechseck/Mitsubishi
 but the card works with any `climate` entity: rows the airco does not
 support are simply left out.
 
+<p align="center">
+  <img src="docs/images/card-light.png" width="320" alt="Airco Commander card in light mode, heating to 21 degrees">
+  <img src="docs/images/card-dark.png" width="320" alt="Airco Commander card in dark mode, cooling to 18 degrees">
+</p>
+
 ## What you get
 
 - **Mode ring** with Auto / Cool / Heat / Fan / Dry, the setpoint in the
@@ -41,6 +46,17 @@ support are simply left out.
 - Tap a pill or the temperature to choose from a sheet with every option.
 - Taps are bundled before they are sent, so stepping through five fan
   speeds is one command to the unit, not five.
+
+### Screenshots
+
+| Mode buttons round the dial | A sheet with every louvre position | More aircos in one card |
+|:---:|:---:|:---:|
+| <img src="docs/images/card-ring.png" width="260" alt="Mode buttons placed round the dial, like the app"> | <img src="docs/images/card-sheet.png" width="260" alt="Sheet with all vertical louvre positions"> | <img src="docs/images/card-tabs.png" width="260" alt="Tabs for three aircos with an All off button"> |
+
+On a wide card (tablet, full-width section) the dial and the controls sit side
+by side:
+
+<p align="center"><img src="docs/images/card-wide.png" width="760" alt="Wide layout with the dial on the left and controls and timers on the right"></p>
 
 ## Installation
 
