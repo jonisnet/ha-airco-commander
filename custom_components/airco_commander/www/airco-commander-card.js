@@ -10,7 +10,7 @@
  * integration itself - no request leaves the house.
  */
 (() => {
-  const CARD_VERSION = "0.0.1-beta.2";
+  const CARD_VERSION = "0.0.1-beta.3";
   const CARD_TAG = "airco-commander-card";
   const DOMAIN = "airco_commander";
   const DEFINE_FALLBACK_DELAY_MS = 5000;
@@ -414,8 +414,11 @@
     button { font-family: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .i { width: 1em; height: 1em; display: block; flex: none; }
-    .layout { position: relative; display: grid; gap: 14px; }
-    .side { display: grid; gap: 12px; align-content: start; }
+    /* minmax(0, 1fr): a long label (e.g. "Midden-midden") must never widen the
+       column, or the dial (sized from the column width) grows and the page jumps. */
+    .layout { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    .layout > * { min-width: 0; }
+    .side { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-content: start; }
 
     /* Header */
     .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -484,7 +487,7 @@
     .is-off .big { opacity: .45; }
     .inside { display: flex; align-items: center; gap: 4px; font-size: max(12px, 4.6cqw); font-weight: 700; color: var(--muted); }
     .inside .i { font-size: 1.2em; }
-    .steps { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); display: flex; gap: 18cqw; }
+    .steps { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); display: flex; gap: 9cqw; }
     .step {
       width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; font-weight: 500;
       background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); transition: transform .12s;
@@ -575,7 +578,7 @@
     .spin .i { animation: spin var(--spin, 2.4s) linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
     .tiles[hidden] { display: none; }
     .tile {
       display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 18px; text-align: left; min-width: 0;
@@ -599,6 +602,8 @@
     .open .caret { transform: rotate(180deg); }
     .timers-body { display: none; padding: 0 14px 14px; gap: 14px; }
     .open .timers-body { display: grid; }
+    .timers.fixed .caret { display: none; }
+    .timers.fixed .timers-head { cursor: default; }
     .timer { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
     .timer-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .timer-title { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; }
@@ -636,7 +641,7 @@
     /* Tablet / wide: dial left, controls right (set from a ResizeObserver,
        or forced with layout: wide / stacked). */
     ha-card.wide { max-width: var(--max-width, 980px); padding: 28px; }
-    .wide .layout { grid-template-columns: minmax(300px, 1fr) minmax(320px, 1fr); gap: 24px; align-items: start; }
+    .wide .layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
     .wide .dial { width: min(100%, 380px); }
     .wide .timers .caret { display: none; }
     .wide .timers .timers-body { display: grid; }
@@ -905,6 +910,7 @@
                       opt("controls", "Ventilator en lamellen", "Fan and louvres"),
                       opt("toggles", "3D Auto en Leegstaand", "3D Auto and Vacant"),
                       opt("favorites", "Favorieten", "Favourites"),
+                      opt("timers", "Timers", "Timers"),
                     ],
                   },
                 },
@@ -1371,10 +1377,24 @@
     }
 
     _range(a) {
-      return {
-        min: typeof a.min_temp === "number" ? a.min_temp : 16,
-        max: typeof a.max_temp === "number" ? a.max_temp : 30,
-      };
+      let min = typeof a.min_temp === "number" ? a.min_temp : 16;
+      let max = typeof a.max_temp === "number" ? a.max_temp : 30;
+      // The WF-RAC integration advertises the widest range of all modes (10-31
+      // with the away preset) but rejects a setpoint outside the range of the
+      // mode the unit is in. Hold the dial, -/+ and the sheet to that range.
+      // Units with the wider range (PresetTempRange2) advertise 33 as maximum.
+      const eid = this._eid();
+      if (this._hass?.entities?.[eid]?.platform === "mitsubishi_wf_rac") {
+        const wide = max >= 33;
+        const perMode = wide
+          ? { heat: [10, 30], cool: [16, 33], dry: [16, 33], auto: [16, 30] }
+          : { heat: [18, 30], cool: [16, 30], dry: [18, 30], auto: [18, 30] };
+        const mode = this._value("hvac", this._hass.states[eid]?.state);
+        const [lo, hi] = perMode[mode] || (wide ? [10, 33] : [16, 30]);
+        min = Math.max(min, lo);
+        max = Math.min(max, hi);
+      }
+      return { min, max };
     }
 
     // ---------------------------------------------------------------- update
@@ -1527,7 +1547,10 @@
       const hasTimers = !!(rel.sleep || rel.nextOff);
       els.timers.hidden = !hasTimers;
       els.noTimers.hidden = hasTimers;
-      els.timers.classList.toggle("open", this._timersOpen);
+      // Timers fold only when "timers" is in collapsible; otherwise always open.
+      const foldTimers = Array.isArray(this._config.collapsible) && this._config.collapsible.includes("timers");
+      els.timers.classList.toggle("fixed", !foldTimers);
+      els.timers.classList.toggle("open", !foldTimers || this._timersOpen || this._isOpen("timers"));
       if (hasTimers) {
         const next = rel.nextOff ? hass.states[rel.nextOff] : null;
         const offTime = this._value("offTime", next?.attributes.off_time);
@@ -1668,7 +1691,10 @@
       if (!target) return;
       const action = target.dataset.action;
       if (action === "toggleTimers" || action === "openTimers") {
-        this._timersOpen = action === "openTimers" ? true : !this._timersOpen;
+        if (action === "toggleTimers" && this._els.timers.classList.contains("fixed")) return;
+        const wasOpen = this._els.timers.classList.contains("open");
+        this._timersOpen = action === "openTimers" ? true : !wasOpen;
+        if (action === "toggleTimers") this._setOpen("timers", this._timersOpen);
         this._els.timers.classList.toggle("open", this._timersOpen);
         if (action === "openTimers") this._els.timers.scrollIntoView({ behavior: "smooth", block: "nearest" });
         return;

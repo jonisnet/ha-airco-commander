@@ -129,7 +129,7 @@ layout: auto                 # auto | stacked | wide (dial and controls side by 
 mode_style: bar              # bar | ring (mode buttons round the dial, like the app)
 temp_step: 0.5               # optional: step of - and +; below 0.5 extra -1/+1 buttons appear
 hide: [energy]               # modes, controls, toggles, favorites, timers, energy, outdoor
-collapsible: [controls, favorites]  # controls, toggles, favorites - folded with a summary
+collapsible: [controls, timers]  # controls, toggles, favorites, timers - folded with a summary
 off_presets: "22:00, 23:00"  # buttons for the daily turn-off time
 sleep_presets: "60, 90"      # sleep timer buttons, in minutes
 favorite_1:
